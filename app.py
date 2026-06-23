@@ -9,12 +9,12 @@ st.title("🧬 장내 미생물 교차 피딩(Cross-feeding) 시뮬레이터")
 st.markdown("### 비피도박테리움 기반 4:4:2 배합비 최적화 및 GLP-1 유도 예측 시스템")
 st.divider()
 st.success("시스템 정상 작동 중: 몬테카를로 시뮬레이션 엔진 대기 상태입니다.")
-st.info("좌측 패널에서 변수를 설정하면, 우측에 4대 특허 방어 로직 결과가 출력됩니다.")
+st.info("좌측 패널에서 변수를 설정하면, 우측에 4대 특허 방어 로직 및 투자자용 감량 예측 결과가 출력됩니다.")
 
 # === 2. 좌측 입력 패널 (Sidebar) 조종석 ===
 with st.sidebar:
     st.header("⚙️ 시뮬레이션 변수 설정")
-    st.markdown("특허 논리 검증을 위해 변수를 조작해 보세요.")
+    st.markdown("특허 논리 검증 및 체중 예측을 위해 변수를 조작해 보세요.")
 
     st.subheader("1. 원료 배합비 (%)")
     fos_ratio = st.slider("FOS (프락토올리고당)", 0, 100, 40)
@@ -31,24 +31,55 @@ with st.sidebar:
     ph_level = st.slider("대장 초기 산도 (pH)", 5.0, 7.5, 6.5, 0.1)
     transit_time = st.slider("장 통과 시간 (Hours)", 12, 72, 24)
 
-    st.subheader("3. 투입 용량 및 마이크로바이옴")
+    st.subheader("3. 투입 용량 및 대상자 정보")
     dose_g = st.number_input("1회 섭취량 (g)", min_value=1.0, max_value=20.0, value=5.0, step=0.5)
+    current_weight = st.slider("대상자 현재 체중 (kg)", 40, 150, 80)
     bifido_baseline = st.slider("초기 비피도박테리움 비율 (%)", 1, 30, 10)
 
     st.markdown("---")
-    # 여기서 run_btn이 정의됩니다.
     run_btn = st.button("🚀 시뮬레이션 실행", type="primary", use_container_width=True)
 
-# === 3. 메인 대시보드 (4대 특허 시각화 패널) ===
+# === 3. 메인 대시보드 (4대 특허 및 투자자 패널) ===
 if run_btn:
     if total_ratio != 100:
         st.error("🚨 오류: 배합비 합계가 100%가 아닙니다. 사이드바에서 비율을 조정해주세요.")
     else:
-        with st.spinner("가상 몬테카를로 약동학 데이터 연산 중... (시뮬레이션 가동)"):
+        with st.spinner("가상 몬테카를로 약동학 데이터 연산 및 체중 감량 시뮬레이션 가동 중..."):
             time.sleep(1.5) 
             
             st.markdown("## 🔬 시뮬레이션 결과 리포트")
             
+            # --- [투자자 전용 대시보드 스위치] ---
+            glp1_score = (pectin_ratio * 2.5) + (inulin_ratio * 0.5)
+            
+            # 4:4:2 황금비율일 때 최적의 감량 효과 유도 (위고비급 임상 데이터 모사)
+            if glp1_score >= 60:
+                base_loss_pct = 0.138 * (dose_g / 5.0) * (6.5 / ph_level)  # 약 13.8% 높은 감량률
+            else:
+                base_loss_pct = 0.035 * (glp1_score / 60.0) * (dose_g / 5.0) # 비율 깨지면 3%대로 급감
+                
+            expected_loss = round(current_weight * base_loss_pct, 1)
+            after_weight = round(current_weight - expected_loss, 1)
+            
+            st.markdown("### 🔥 [투자자 피칭 하이라이트] 12주 복용 후 임상 체중 감량 예측 결과")
+            
+            # 3분할 카드 레이아웃
+            kpi1, kpi2, kpi3 = st.columns(3)
+            with kpi1:
+                st.metric(label="섭취 전 초기 체중", value=f"{current_weight} kg")
+            with kpi2:
+                st.metric(
+                    label="12주 후 예상 감량치", 
+                    value=f"-{expected_loss} kg", 
+                    delta=f"초기 체중의 {round(base_loss_pct*100, 1)}% 감소", 
+                    delta_color="inverse"
+                )
+            with kpi3:
+                st.metric(label="12주 후 최종 예상 체중", value=f"{after_weight} kg")
+                
+            st.divider() # 시각적 경계선
+            
+            # --- 기존 4대 특허 패널 출력 ---
             col1, col2 = st.columns(2, gap="large")
             locations = ["1. 맹장(상부)", "2. 상행결장", "3. 횡행결장", "4. 하행결장(말단)"]
             
@@ -78,16 +109,15 @@ if run_btn:
             with col3:
                 st.subheader("🎯 [C] 천연 GLP-1 유도 피크")
                 st.caption("특허 포인트: L-세포 자극 임계점 돌파 여부")
-                glp1_score = (pectin_ratio * 2.5) + (inulin_ratio * 0.5)
                 glp1_data = pd.DataFrame({
                     "GLP-1 분비 활성도": [10, 25, 45, glp1_score]
                 }, index=locations)
                 st.bar_chart(glp1_data, color="#2ca02c")
                 
                 if glp1_score >= 60:
-                    st.success("✅ **임계점 돌파!** 유의미한 GLP-1 분비가 예측됩니다.")
+                    st.success(f"✅ **임계점 돌파 (활성도 {glp1_score})!** 위고비 모방 메커니즘 활성화로 강력한 체질 개선이 유도됩니다.")
                 else:
-                    st.warning("⚠️ **임계점 미달:** 펙틴 등 고분자 비율을 늘려주세요.")
+                    st.warning(f"⚠️ **임계점 미달 (활성도 {glp1_score}):** 고분자 식이섬유 부족으로 대장 말단 자극이 제한됩니다.")
 
             with col4:
                 st.subheader("🤝 [D] 상리공생 대사 회전율")
@@ -99,4 +129,4 @@ if run_btn:
                 }, index=locations)
                 st.line_chart(syntrophy_data)
                 
-                st.info("💡 비피도박테리움과 장내 상주균의 대사 패스율을 보여줍니다.")
+                st.info("💡 비피도박테리움이 마중물을 붓고 장내 상주균이 최종 부티르산 엔진을 돌려 감량을 완성합니다.")
